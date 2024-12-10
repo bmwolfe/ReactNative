@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     SafeAreaView,
     ScrollView,
@@ -13,6 +13,7 @@ import {
 
 import LinearGradient from 'react-native-linear-gradient';
 import { Colors } from 'react-native/Libraries/NewAppScreen';
+import { fetchSteps, fetchCalories, fetchAvgHeartRate } from '../queryService'; // Import dynamic queries
 
 function Header() {
     return (
@@ -52,32 +53,48 @@ function Section({ children, title }) {
 }
 
 function HomeScreen({ navigation }) {
+    const [steps, setSteps] = useState(null);
+    const [calories, setCalories] = useState(null);
+    const [avgHeartRate, setAvgHeartRate] = useState(null);
+
     const isDarkMode = useColorScheme() === 'dark';
     const backgroundStyle = { backgroundColor: isDarkMode ? Colors.darker : '#FDF5E6' };
 
-    const goToActivityScreen = () => {
-        navigation.navigate('Activity');
-    };
+    useEffect(() => {
+        // Fetch all the required data on component mount
+        fetchSteps(
+            rows => {
+                if (rows.length > 0) {
+                    setSteps(rows.item(0).steps);
+                } else {
+                    setSteps('No data');
+                }
+            },
+            error => console.error('Error fetching steps:', error)
+        );
 
-    const goToHeartScreen = () => {
-        navigation.navigate('Heart');
-    }
+        fetchCalories(
+            rows => {
+                if (rows.length > 0) {
+                    setCalories(rows.item(0).consumed);
+                } else {
+                    setCalories('No data');
+                }
+            },
+            error => console.error('Error fetching calories:', error)
+        );
 
-    const goToNutritionScreen = () => {
-        navigation.navigate('Nutrition');
-    }
-
-    const goToMedicationsScreen = () => {
-        navigation.navigate('Medications');
-    }
-
-    const goToRecordsScreen = () => {
-        navigation.navigate('Records');
-    }
-
-    const goToNewScreen = () => {
-        Alert.alert('Button Pressed', 'Feature coming soon!');
-    };
+        fetchAvgHeartRate(
+            rows => {
+                if (rows.length > 0) {
+                    setAvgHeartRate(rows.item(0).rate);
+                } else {
+                    setAvgHeartRate('No data');
+                }
+            },
+            error => console.error('Error fetching average heart rate:', error)
+        );
+    }, []);
 
     return (
         <SafeAreaView style={[backgroundStyle, styles.safeArea]}>
@@ -92,47 +109,66 @@ function HomeScreen({ navigation }) {
                     <View style={styles.statsContainer}>
                         <View style={styles.statBox}>
                             <Text style={styles.statTitle}>Steps</Text>
-                            <Text style={styles.statValue}>5,243</Text>
+                            <Text style={styles.statValue}>{steps !== null ? steps : 'Loading...'}</Text>
                         </View>
                         <View style={styles.statBox}>
                             <Text style={styles.statTitle}>Avg Heart Rate</Text>
-                            <Text style={styles.statValue}>78 bpm</Text>
+                            <Text style={styles.statValue}>
+                                {avgHeartRate !== null ? `${avgHeartRate} bpm` : 'Loading...'}
+                            </Text>
                         </View>
                         <View style={styles.statBox}>
                             <Text style={styles.statTitle}>Calories</Text>
-                            <Text style={styles.statValue}>1,523 kcal</Text>
+                            <Text style={styles.statValue}>
+                                {calories !== null ? `${calories} kcal` : 'Loading...'}
+                            </Text>
                         </View>
                     </View>
 
                     <View style={styles.buttonGrid}>
-                        <Pressable style={({ pressed }) => [
-                            styles.squareButton,
-                            { backgroundColor: pressed ? '#008098' : '#008080' },
-                        ]} onPress={goToActivityScreen}>
+                        <Pressable
+                            style={({ pressed }) => [
+                                styles.squareButton,
+                                { backgroundColor: pressed ? '#008098' : '#008080' },
+                            ]}
+                            onPress={() => navigation.navigate('Activity')}
+                        >
                             <Text style={styles.buttonText}>Activity</Text>
                         </Pressable>
-                        <Pressable style={({ pressed }) => [
-                            styles.squareButton,
-                            { backgroundColor: pressed ? '#008098' : '#008080' },
-                        ]} onPress={goToMedicationsScreen}>
+                        <Pressable
+                            style={({ pressed }) => [
+                                styles.squareButton,
+                                { backgroundColor: pressed ? '#008098' : '#008080' },
+                            ]}
+                            onPress={() => navigation.navigate('Medications')}
+                        >
                             <Text style={styles.buttonText}>Medications</Text>
                         </Pressable>
-                        <Pressable style={({ pressed }) => [
-                            styles.squareButton,
-                            { backgroundColor: pressed ? '#008098' : '#008080' },
-                        ]} onPress={goToHeartScreen}>
+                        <Pressable
+                            style={({ pressed }) => [
+                                styles.squareButton,
+                                { backgroundColor: pressed ? '#008098' : '#008080' },
+                            ]}
+                            onPress={() => navigation.navigate('Heart')}
+                        >
                             <Text style={styles.buttonText}>Heart</Text>
                         </Pressable>
-                        <Pressable style={({ pressed }) => [
-                            styles.squareButton,
-                            { backgroundColor: pressed ? '#008098' : '#008080' },
-                        ]} onPress={goToNutritionScreen}>
+                        <Pressable
+                            style={({ pressed }) => [
+                                styles.squareButton,
+                                { backgroundColor: pressed ? '#008098' : '#008080' },
+                            ]}
+                            onPress={() => navigation.navigate('Nutrition')}
+                        >
                             <Text style={styles.buttonText}>Nutrition</Text>
                         </Pressable>
-                        <Pressable style={({ pressed }) => [
-                            styles.squareButton,
-                            { backgroundColor: pressed ? '#008098' : '#008080' },
-                        ]} onPress={goToRecordsScreen}>
+                        <Pressable
+                            style={({ pressed }) => [
+                                styles.squareButton,
+                                { backgroundColor: pressed ? '#008098' : '#008080' },
+                            ]}
+                            onPress={() => navigation.navigate('Records')}
+                        >
                             <Text style={styles.buttonText}>Records</Text>
                         </Pressable>
                     </View>
@@ -241,6 +277,5 @@ const styles = StyleSheet.create({
         fontSize: 20,
     },
 });
-
 
 export default HomeScreen;

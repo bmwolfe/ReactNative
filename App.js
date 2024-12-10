@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from './screens/HomeScreen';
@@ -8,19 +8,20 @@ import NutritionScreen from './screens/NutritionScreen';
 import MedicationsScreen from './screens/MedicationsScreen';
 import RecordsScreen from './screens/RecordsScreen';
 import LoginScreen from './screens/LoginScreen';
-
-const Stack = createNativeStackNavigator();
+import { initializeDatabase, createTables, insertSampleData } from './db-service';
 
 import {
   SafeAreaView,
   StatusBar,
   useColorScheme,
-  View,
+  Text,
 } from 'react-native';
 
 import {
   Colors,
 } from 'react-native/Libraries/NewAppScreen';
+
+const Stack = createNativeStackNavigator();
 
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
@@ -29,6 +30,16 @@ function App() {
   };
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Database initialization
+    useEffect(() => {
+      const setupDatabase = async () => {
+        await initializeDatabase();
+        insertSampleData();
+      };
+
+      setupDatabase();
+    }, []);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: backgroundStyle.backgroundColor }}>

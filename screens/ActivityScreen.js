@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     SafeAreaView,
     ScrollView,
@@ -6,14 +6,19 @@ import {
     StyleSheet,
     Text,
     TextInput,
-    Button,
-    useColorScheme,
+    Pressable,
     View,
-    Pressable
+    useColorScheme,
 } from 'react-native';
-
 import LinearGradient from 'react-native-linear-gradient';
 import { Colors } from 'react-native/Libraries/NewAppScreen';
+import {
+    fetchSteps,
+    fetchDistance,
+    fetchTime,
+    fetchActivity,
+    insertActivity,
+} from '../queryService';
 
 function Header() {
     return (
@@ -51,13 +56,59 @@ function Section({ children, title }) {
 function ActivityScreen() {
     const isDarkMode = useColorScheme() === 'dark';
     const backgroundStyle = { backgroundColor: isDarkMode ? Colors.darker : '#E8F5E9' };
+
+    const [steps, setSteps] = useState('0');
+    const [distance, setDistance] = useState('0 km');
+    const [time, setTime] = useState('0 mins');
     const [activityInput, setActivityInput] = useState('');
     const [activityLog, setActivityLog] = useState([]);
 
+    useEffect(() => {
+        fetchActivityData();
+        fetchActivityLog();
+    }, []);
+
+    const fetchActivityData = () => {
+        // Fetch Steps
+        fetchSteps(
+            (rows) => setSteps(rows._array[0]?.steps || '0'),
+            (error) => console.error('Error fetching steps:', error)
+        );
+
+        // Fetch Distance
+        fetchDistance(
+            (rows) => setDistance(`${rows._array[0]?.distance || 0} km`),
+            (error) => console.error('Error fetching distance:', error)
+        );
+
+        // Fetch Time
+        fetchTime(
+            (rows) => setTime(`${rows._array[0]?.time || 0} mins`),
+            (error) => console.error('Error fetching time:', error)
+        );
+    };
+
+    const fetchActivityLog = () => {
+        fetchActivity(
+            (rows) => {
+                const activities = rows._array.map((item) => item.activity);
+                setActivityLog(activities);
+            },
+            (error) => console.error('Error fetching activity log:', error)
+        );
+    };
+
     const logActivity = () => {
         if (activityInput.trim()) {
-            setActivityLog([...activityLog, activityInput]);
-            setActivityInput('');
+            // Insert new activity into the database
+            insertActivity(
+                activityInput,
+                () => {
+                    setActivityLog([...activityLog, activityInput]);
+                    setActivityInput('');
+                },
+                (error) => console.error('Error logging activity:', error)
+            );
         }
     };
 
@@ -74,20 +125,20 @@ function ActivityScreen() {
                     <View style={styles.statsContainer}>
                         <View style={styles.statBox}>
                             <Text style={styles.statTitle}>Steps</Text>
-                            <Text style={styles.statValue}>5,243</Text>
+                            <Text style={styles.statValue}>{steps}</Text>
                         </View>
                         <View style={styles.statBox}>
                             <Text style={styles.statTitle}>Distance</Text>
-                            <Text style={styles.statValue}>3.2 km</Text>
+                            <Text style={styles.statValue}>{distance}</Text>
                         </View>
                         <View style={styles.statBox}>
                             <Text style={styles.statTitle}>Active Time</Text>
-                            <Text style={styles.statValue}>45 mins</Text>
+                            <Text style={styles.statValue}>{time}</Text>
                         </View>
                     </View>
 
                     <View style={styles.logContainer}>
-                        <TextInput 
+                        <TextInput
                             style={styles.input}
                             onChangeText={setActivityInput}
                             value={activityInput}
@@ -196,5 +247,6 @@ const styles = StyleSheet.create({
         paddingVertical: 2,
     },
 });
+
 
 export default ActivityScreen;

@@ -1,108 +1,133 @@
 import React, { useState, useEffect } from 'react';
 import {
     SafeAreaView,
+    ScrollView,
     StatusBar,
     StyleSheet,
     Text,
-    View,
-    FlatList,
     useColorScheme,
+    View,
 } from 'react-native';
+
+import LinearGradient from 'react-native-linear-gradient';
 import { Colors } from 'react-native/Libraries/NewAppScreen';
+import { fetchMedicalRecords } from '../queryService'; // Import dynamic query
 
 function Header() {
     return (
-        <View style={styles.header}>
+        <LinearGradient
+            colors={['#4CAF50', '#2E7D32']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.header}
+        >
             <Text style={styles.headerTitle}>Medical Records</Text>
+        </LinearGradient>
+    );
+}
+
+function Section({ children, title }) {
+    const isDarkMode = useColorScheme() === 'dark';
+    return (
+        <View style={styles.sectionContainer}>
+            <Text
+                style={[
+                    styles.sectionTitle,
+                    { color: isDarkMode ? Colors.white : Colors.black },
+                ]}
+            >
+                {title}
+            </Text>
+            <Text
+                style={[
+                    styles.sectionDescription,
+                    { color: isDarkMode ? Colors.light : Colors.dark },
+                ]}
+            >
+                {children}
+            </Text>
         </View>
     );
 }
 
-function RecordsScreen() {
+function MedicalRecordsScreen() {
     const [records, setRecords] = useState([]);
     const isDarkMode = useColorScheme() === 'dark';
-    const backgroundStyle = {
-        backgroundColor: isDarkMode ? Colors.darker : '#E8F5E9',
-    };
+    const backgroundStyle = { backgroundColor: isDarkMode ? Colors.darker : '#FDF5E6' };
 
     useEffect(() => {
-        fetchRecords();
-    }, []);
-
-    const fetchRecords = async () => {
-        const data = [
-            { id: '1', date: '2024-10-15', doctor: 'Dr. John Doe', diagnosis: 'Hypertension' },
-            { id: '2', date: '2024-11-05', doctor: 'Dr. Lisa Chen', diagnosis: 'Annual Checkup' },
-        ];
-        setRecords(data);
-    };
-
-    const renderRecord = ({ item }) => (
-        <View style={styles.recordContainer}>
-            <Text style={styles.recordDate}>Date: {item.date}</Text>
-            <Text style={styles.recordDoctor}>Doctor: {item.doctor}</Text>
-            <Text style={styles.recordDiagnosis}>Diagnosis: {item.diagnosis}</Text>
-        </View>
+    fetchMedicalRecords(
+        (rows) => {
+            if (rows && rows._array && rows._array.length > 0) {
+                setRecords(rows._array);
+            } else {
+                console.log('No medical records found.');
+                setRecords([]);
+            }
+        },
+        (error) => console.error('Error fetching medical records:', error)
     );
+    }, []);
 
     return (
         <SafeAreaView style={[backgroundStyle, styles.safeArea]}>
-            <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={backgroundStyle.backgroundColor} />
+            <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
             <Header />
-            <FlatList
-                data={records}
-                renderItem={renderRecord}
-                keyExtractor={item => item.id}
-                contentContainerStyle={styles.flatListContentContainer}
-            />
+            <ScrollView contentInsetAdjustmentBehavior="automatic" style={backgroundStyle}>
+                <View style={styles.container}>
+                    <Section title="Your Medical Records">
+                        View and track your medical history here.
+                    </Section>
+                    {records.length > 0 ? (
+                        records.map((record, index) => (
+                            <View key={index} style={styles.recordBox}>
+                                <Text style={styles.recordText}>
+                                    <Text style={styles.recordLabel}>Date:</Text> {record.date}
+                                </Text>
+                                <Text style={styles.recordText}>
+                                    <Text style={styles.recordLabel}>Doctor:</Text> {record.doctor}
+                                </Text>
+                                <Text style={styles.recordText}>
+                                    <Text style={styles.recordLabel}>Diagnosis:</Text> {record.diagnosis}
+                                </Text>
+                            </View>
+                        ))
+                    ) : (
+                        <Text style={styles.noRecordsText}>No records available.</Text>
+                    )}
+
+                </View>
+            </ScrollView>
         </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    safeArea: {
-        flex: 1,
-    },
+    safeArea: { flex: 1 },
+    container: { paddingHorizontal: 20, paddingVertical: 20 },
     header: {
-        backgroundColor: '#4CAF50',
         padding: 15,
         borderBottomLeftRadius: 10,
         borderBottomRightRadius: 10,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
-        elevation: 10,
     },
     headerTitle: {
-        fontSize: 30,
+        fontSize: 28,
         fontWeight: 'bold',
         color: 'white',
         textAlign: 'center',
     },
-    recordContainer: {
+    sectionContainer: { marginTop: 20, paddingHorizontal: 24 },
+    sectionTitle: { fontSize: 22, fontWeight: '600', color: '#333333' },
+    sectionDescription: { marginTop: 8, fontSize: 16, fontWeight: '400', color: '#333333' },
+    recordBox: {
         backgroundColor: '#C8E6C9',
-        padding: 20,
-        marginVertical: 10,
+        padding: 15,
         borderRadius: 10,
+        marginVertical: 10,
     },
-    recordDate: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#388E3C',
-    },
-    recordDoctor: {
-        fontSize: 16,
-        color: '#4CAF50',
-    },
-    recordDiagnosis: {
-        fontSize: 16,
-        color: '#4CAF50',
-    },
-    flatListContentContainer: {
-        paddingHorizontal: 20,
-        paddingTop: 20,
-    },
+    recordText: { fontSize: 16, color: '#2E7D32', marginBottom: 5 },
+    recordLabel: { fontWeight: 'bold' },
+    noRecordsText: { fontSize: 16, color: '#666666', textAlign: 'center', marginTop: 20 },
 });
 
-export default RecordsScreen;
+export default MedicalRecordsScreen;

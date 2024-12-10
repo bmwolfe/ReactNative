@@ -1,16 +1,34 @@
 import React, { useState } from 'react';
-import { SafeAreaView, StyleSheet, Text, TextInput, Button, View } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, TextInput, Button, Alert } from 'react-native';
+import { getDbInstance } from '../db-service'; // Import the database service
+import { setGlobalUserId } from '../globalState'; // Import a function to set global user ID
 
 function LoginScreen({ onLogin }) {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
 
     const handleLogin = () => {
-        if (username === 'user' && password === 'password') {
-            onLogin();
-        } else {
-            alert('Invalid credentials');
-        }
+        const db = getDbInstance();
+
+        db.transaction(tx => {
+            tx.executeSql(
+                `SELECT user_id FROM user_table WHERE LOWER(username) = LOWER(?) AND password = ?`,
+                [username, password],
+                (_, { rows }) => {
+                    if (rows.length > 0) {
+                        const userId = rows.item(0).user_id;
+                        setGlobalUserId(userId); // Set the global user ID
+                        onLogin(); // Call the onLogin function
+                    } else {
+                        Alert.alert('Login Failed', 'Invalid credentials');
+                    }
+                },
+                (txObj, error) => {
+                    console.error('Error executing SQL query:', error.message || error);
+                    Alert.alert('Error', 'Something went wrong. Please try again.');
+                }
+            );
+        });
     };
 
     return (
@@ -21,6 +39,7 @@ function LoginScreen({ onLogin }) {
                 placeholder="Username"
                 value={username}
                 onChangeText={setUsername}
+                autoCapitalize="none"
             />
             <TextInput
                 style={styles.input}
